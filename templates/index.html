@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Virtual PC Builder</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='viewer.css') }}">
+  <script src="{{ url_for('static', filename='compatibility.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='bios.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='startup.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='saved-builds.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='viewer.js') }}" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <span class="brand-icon" aria-hidden="true">▤</span>
+    <span>Virtual PC Builder</span>
+  </header>
+  <main>
+    <header class="page-heading">
+      <p class="eyebrow">Assembly simulator / Phase 7</p>
+      <h1>Assemble the PC</h1>
+      <p>Drag a part onto its matching slot, or select a part and then select its slot.</p>
+    </header>
+    <section class="saved-builds" aria-labelledby="saved-builds-heading">
+      <header>
+        <h2 id="saved-builds-heading">Saved builds</h2>
+        <button type="button" id="demo-build">Load demo build</button>
+      </header>
+      <div class="saved-build-forms">
+        <form id="save-build">
+          <label for="build-name">Build name</label>
+          <div><input id="build-name" maxlength="80" required><button type="submit">Save build</button></div>
+        </form>
+        <form id="load-build">
+          <label for="build-locator">Build ID or link</label>
+          <div><input id="build-locator" required><button type="submit">Load build</button></div>
+        </form>
+      </div>
+      <p id="saved-build-status" role="status"></p>
+      <a id="saved-build-link" hidden>Open saved build</a>
+    </section>
+    <section class="startup" aria-labelledby="startup-heading">
+      <header class="startup-header">
+        <h2 id="startup-heading">PC startup</h2>
+        <button type="button" id="pc-power">Power on</button>
+      </header>
+      <div id="startup-display" data-state="off">
+        <div class="startup-message" role="status">
+          <strong id="startup-state" tabindex="-1">Powered off</strong>
+          <p id="startup-detail">Press Power on to run startup checks.</p>
+        </div>
+        <ol id="startup-log" aria-label="Startup diagnostics" aria-live="polite"></ol>
+        <section id="bios-screen" aria-labelledby="bios-heading" hidden>
+          <h3 id="bios-heading" tabindex="-1">UEFI / BIOS setup</h3>
+          <div class="bios-grid">
+            <div class="bios-panel">
+              <h4>Installed hardware</h4>
+              <dl id="bios-info"></dl>
+              <p class="bios-note">CPU and GPU temperatures are simulated idle readings.</p>
+            </div>
+            <div class="bios-panel">
+              <h4>Available drives</h4>
+              <ul id="bios-drives"></ul>
+              <label class="bios-usb"><input type="checkbox" id="bios-usb"> Connect virtual USB installer</label>
+            </div>
+            <form id="boot-settings" class="bios-panel">
+              <h4>Boot priority</h4>
+              <label>First boot device
+                <select id="boot-primary">
+                  <option value="ssd">Internal M.2 SSD</option>
+                  <option value="usb">Virtual USB installer</option>
+                </select>
+              </label>
+              <label>Fallback boot device
+                <select id="boot-fallback">
+                  <option value="">Disabled</option>
+                  <option value="ssd">Internal M.2 SSD</option>
+                  <option value="usb">Virtual USB installer</option>
+                </select>
+              </label>
+              <div class="bios-actions">
+                <button type="submit">Save settings</button>
+                <button type="button" id="boot-attempt">Attempt boot</button>
+              </div>
+              <p class="bios-note" id="boot-settings-status" role="status"></p>
+            </form>
+          </div>
+        </section>
+        <button type="button" id="return-to-bios" hidden>Return to BIOS</button>
+      </div>
+    </section>
+    <details class="compatibility">
+      <summary>Build compatibility <span id="compatibility-summary" role="status"></span></summary>
+      <p>Switch simulated hardware profiles to compare specs. The 3D models represent the slots and connections.</p>
+      <div class="hardware-options">
+        <label>Motherboard<select name="motherboard"></select></label>
+        <label>CPU<select name="cpu"></select></label>
+        <label>RAM<select name="ram"></select></label>
+        <label>GPU<select name="gpu"></select></label>
+        <label>Power supply<select name="psu"></select></label>
+        <label>Storage<select name="storage"></select></label>
+      </div>
+      <ul id="compatibility-checks"></ul>
+    </details>
+    <div class="assembly">
+      <aside class="catalog" aria-labelledby="catalog-heading">
+        <h2 id="catalog-heading">Components</h2>
+        <button type="button" class="part" data-part="motherboard" draggable="true" aria-pressed="false">
+          <strong>Motherboard</strong><span>Case tray</span>
+        </button>
+        <button type="button" class="part" data-part="cpu" draggable="true" aria-pressed="false">
+          <strong>CPU</strong><span>CPU socket</span>
+        </button>
+        <button type="button" class="part" data-part="ram" draggable="true" aria-pressed="false">
+          <strong>RAM</strong><span>DIMM slot</span>
+        </button>
+        <button type="button" class="part" data-part="frontFan" draggable="true" aria-pressed="false">
+          <strong>Front case fan</strong><span>Intake mount</span>
+        </button>
+        <button type="button" class="part" data-part="rearFan" draggable="true" aria-pressed="false">
+          <strong>Rear case fan</strong><span>Exhaust mount</span>
+        </button>
+        <button type="button" class="part" data-part="psu" draggable="true" aria-pressed="false">
+          <strong>Power supply</strong><span>Bottom rear bay</span>
+        </button>
+        <button type="button" class="part" data-part="gpu" draggable="true" aria-pressed="false">
+          <strong>Graphics card (GPU)</strong><span>PCIe x16 slot</span>
+        </button>
+        <button type="button" class="part" data-part="storage" draggable="true" aria-pressed="false">
+          <strong>M.2 SSD</strong><span>Motherboard M.2 slot</span>
+        </button>
+        <h3>Wiring</h3>
+        <button type="button" class="part" data-part="boardPower" draggable="true" aria-pressed="false">
+          <strong>24-pin ATX cable</strong><span>Motherboard power</span>
+        </button>
+        <button type="button" class="part" data-part="cpuPower" draggable="true" aria-pressed="false">
+          <strong>8-pin EPS cable</strong><span>CPU power header</span>
+        </button>
+        <button type="button" class="part" data-part="gpuPower" draggable="true" aria-pressed="false">
+          <strong>8-pin PCIe cable</strong><span>GPU power socket</span>
+        </button>
+        <button type="button" class="part" data-part="frontFanLead" draggable="true" aria-pressed="false">
+          <strong>Front fan lead</strong><span>Front fan header</span>
+        </button>
+        <button type="button" class="part" data-part="rearFanLead" draggable="true" aria-pressed="false">
+          <strong>Rear fan lead</strong><span>Rear fan header</span>
+        </button>
+      </aside>
+      <section class="viewer" aria-label="PC case viewer">
+        <div class="viewport">
+          <canvas tabindex="0" aria-label="3D PC assembly" aria-describedby="controls"></canvas>
+          <div class="snap-targets">
+            <button type="button" class="snap-target" data-slot="motherboard" aria-label="Motherboard tray" hidden>Tray</button>
+            <button type="button" class="snap-target" data-slot="cpu" aria-label="CPU socket" hidden>CPU</button>
+            <button type="button" class="snap-target" data-slot="ram" aria-label="RAM DIMM slot" hidden>RAM</button>
+            <button type="button" class="snap-target" data-slot="frontFan" aria-label="Front intake fan mount" hidden>Intake</button>
+            <button type="button" class="snap-target" data-slot="rearFan" aria-label="Rear exhaust fan mount" hidden>Exhaust</button>
+            <button type="button" class="snap-target" data-slot="psu" aria-label="Power supply bay" hidden>PSU</button>
+            <button type="button" class="snap-target" data-slot="gpu" aria-label="PCIe x16 slot" hidden>PCIe</button>
+            <button type="button" class="snap-target" data-slot="boardPower" aria-label="Motherboard power" hidden>ATX</button>
+            <button type="button" class="snap-target" data-slot="cpuPower" aria-label="CPU power header" hidden>EPS</button>
+            <button type="button" class="snap-target" data-slot="gpuPower" aria-label="GPU power socket" hidden>GPU 8-pin</button>
+            <button type="button" class="snap-target" data-slot="frontFanLead" aria-label="Front fan header" hidden>Front FAN</button>
+            <button type="button" class="snap-target" data-slot="rearFanLead" aria-label="Rear fan header" hidden>Rear FAN</button>
+            <button type="button" class="snap-target" data-slot="storage" aria-label="Motherboard M.2 slot" hidden>M.2</button>
+          </div>
+          <p class="viewer-error" role="alert" hidden></p>
+          <span class="viewport-label"><span aria-hidden="true"></span> Perspective</span>
+          <div class="toolbar">
+            <button type="button" id="zoom-out" aria-label="Zoom out">−</button>
+            <button type="button" id="zoom-in" aria-label="Zoom in">+</button>
+            <button type="button" id="reset">Reset view</button>
+          </div>
+        </div>
+        <p class="assembly-status" role="status">Select a component to begin.</p>
+        <section id="fastening" aria-labelledby="fastening-heading" hidden>
+          <h3 id="fastening-heading">Mounting screws</h3>
+          <p>Select each screw to tighten it.</p>
+          <div id="screw-groups"></div>
+        </section>
+        <footer id="controls">
+          <span><strong>Rotate</strong> Drag or use arrow keys</span>
+          <span><strong>Zoom</strong> Scroll, pinch, or use + / −</span>
+        </footer>
+      </section>
+    </div>
+  </main>
+</body>
+</html>
